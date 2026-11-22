@@ -1,0 +1,29 @@
+# Publishes a release with the app file held on the dist branch.
+# Run it from the Actions tab and give the version, such as 1.0.1.
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, such as 1.0.1
+        required: true
+  push:
+    branches: [dist]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dist
+      - name: Publish the release
+        run: |
+          V="${{ inputs.version }}"
+          if [ -z "$V" ]; then V="$(cat VERSION)"; fi
+          echo "$(cat SHA256)  Ninefold.apk" | sha256sum -c -
+          if gh release view "v$V" >/dev/null 2>&1; then echo "v$V is already published"; exit 0; fi
+          gh release create "v$V" Ninefold.apk --target main --title "Ninefold $V" --notes-file NOTES.md --latest
+        env:
+          GH_TOKEN: ${{ github.token }}
